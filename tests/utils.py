@@ -22,6 +22,7 @@ from ocp_resources.virtual_machine_instance_migration import VirtualMachineInsta
 from pyhelper_utils.shell import run_ssh_commands
 from timeout_sampler import TimeoutExpiredError, TimeoutSampler
 
+from tests.virt.utils import get_match_expressions_dict
 from utilities.constants import (
     DISK_SERIAL,
     HCO_DEFAULT_CPU_MODEL_KEY,
@@ -608,3 +609,4 @@ def create_cirros_vm(
         if wait_running:
             running_vm(vm=vm, wait_for_interfaces=False)
         yield vm
+
