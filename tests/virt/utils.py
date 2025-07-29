@@ -503,17 +503,12 @@ def build_node_affinity(required_nodes=None, preferred_nodes=None):
 
     if required_nodes:
         affinity["nodeAffinity"]["requiredDuringSchedulingIgnoredDuringExecution"] = {
-            "nodeSelectorTerms": [
-                get_match_expressions_dict(nodes_list=required_nodes)
-            ]
+            "nodeSelectorTerms": [get_match_expressions_dict(nodes_list=required_nodes)]
         }
 
     if preferred_nodes:
         affinity["nodeAffinity"]["preferredDuringSchedulingIgnoredDuringExecution"] = [
-            {
-                "weight": 1,
-                "preference": get_match_expressions_dict(nodes_list=preferred_nodes)
-            }
+            {"weight": 1, "preference": get_match_expressions_dict(nodes_list=preferred_nodes)}
         ]
 
     return affinity
