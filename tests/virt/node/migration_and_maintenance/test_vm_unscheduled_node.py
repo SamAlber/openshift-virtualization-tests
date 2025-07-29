@@ -2,8 +2,8 @@ import pytest
 from ocp_resources.virtual_machine_instance import VirtualMachineInstance
 from pytest_testconfig import config as py_config
 
-from tests.virt.utils import get_match_expressions_dict
 from tests.os_params import RHEL_LATEST, RHEL_LATEST_LABELS, RHEL_LATEST_OS
+from tests.virt.utils import get_match_expressions_dict
 from utilities.constants import TIMEOUT_20SEC
 from utilities.virt import (
     node_mgmt_console,
@@ -17,9 +17,7 @@ def required_affinity_for_worker_node(worker_node1):
     return {
         "nodeAffinity": {
             "requiredDuringSchedulingIgnoredDuringExecution": {
-                "nodeSelectorTerms": [
-                    get_match_expressions_dict([worker_node1.hostname])
-                ]
+                "nodeSelectorTerms": [get_match_expressions_dict([worker_node1.hostname])]
             }
         }
     }
@@ -44,6 +42,7 @@ def unscheduled_node_vm(
     ) as vm:
         yield vm
 
+
 @pytest.mark.gating
 @pytest.mark.s390x
 @pytest.mark.rwx_default_storage
@@ -66,7 +65,6 @@ def unscheduled_node_vm(
     ],
     indirect=True,
 )
-
 @pytest.mark.polarion("CNV-4157")
 def test_schedule_vm_on_cordoned_node(nodes, data_volume_scope_function, unscheduled_node_vm, worker_node1):
     """Test VM scheduling on a node under maintenance.
