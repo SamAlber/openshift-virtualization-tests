@@ -1169,6 +1169,7 @@ class VirtualMachineForTestsFromTemplate(VirtualMachineForTests):
             template_object (Template, optional): Template object to create the VM from
             non_existing_pvc(bool, default=False): If True, referenced PVC in DataSource is missing
             data_volume_template_from_vm_spec (bool, default=False): Use (and don't manipulate) VM's DataVolumeTemplates
+            vm_affinity (dict, optional): Affinity rules for scheduling the VM on specific nodes
         Returns:
             obj `VirtualMachine`: VM resource
         """

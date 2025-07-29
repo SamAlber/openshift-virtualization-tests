@@ -12,17 +12,6 @@ from utilities.virt import (
 )
 
 
-@pytest.fixture
-def required_affinity_for_worker_node(worker_node1):
-    return {
-        "nodeAffinity": {
-            "requiredDuringSchedulingIgnoredDuringExecution": {
-                "nodeSelectorTerms": [get_match_expressions_dict([worker_node1.hostname])]
-            }
-        }
-    }
-
-
 @pytest.fixture()
 def unscheduled_node_vm(
     request,
@@ -31,14 +20,22 @@ def unscheduled_node_vm(
     unprivileged_client,
     namespace,
     data_volume_scope_function,
-    required_affinity_for_worker_node,
 ):
+
+    vm_affinity = {
+        "nodeAffinity": {
+            "requiredDuringSchedulingIgnoredDuringExecution": {
+                "nodeSelectorTerms": [get_match_expressions_dict([worker_node1.hostname])]
+            }
+        }
+    }
+
     with vm_instance_from_template(
         request=request,
         unprivileged_client=unprivileged_client,
         namespace=namespace,
         existing_data_volume=data_volume_scope_function,
-        vm_affinity=required_affinity_for_worker_node,
+        vm_affinity=vm_affinity,
     ) as vm:
         yield vm
 
@@ -78,14 +75,12 @@ def test_schedule_vm_on_cordoned_node(nodes, data_volume_scope_function, unsched
     8. Verify that the VMI is running on the expected node (worker_node1).
     """
 
-    vm_node = worker_node1  # Since we know affinity targets it
-
-    with node_mgmt_console(node=vm_node, node_mgmt="cordon"):
-        wait_for_node_schedulable_status(node=vm_node, status=False)
+    with node_mgmt_console(node=worker_node1, node_mgmt="cordon"):
+        wait_for_node_schedulable_status(node=worker_node1, status=False)
         unscheduled_node_vm.start()
         unscheduled_node_vm.vmi.wait_for_status(status=VirtualMachineInstance.Status.SCHEDULING, timeout=TIMEOUT_20SEC)
     unscheduled_node_vm.vmi.wait_for_status(status=VirtualMachineInstance.Status.RUNNING)
     vmi_node_name = unscheduled_node_vm.privileged_vmi.virt_launcher_pod.node.name
-    assert vmi_node_name == vm_node.name, (
-        f"VMI is running on {vmi_node_name} and not on the expected node {vm_node.name}"
+    assert vmi_node_name == worker_node1.name, (
+        f"VMI is running on {vmi_node_name} and not on the expected node {worker_node1.name}"
     )
