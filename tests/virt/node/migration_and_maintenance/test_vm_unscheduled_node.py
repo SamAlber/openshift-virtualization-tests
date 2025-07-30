@@ -21,14 +21,13 @@ def unscheduled_node_vm(
     namespace,
     data_volume_scope_function,
 ):
-    vm_affinity = build_node_affinity(required_nodes=[worker_node1.hostname])
 
     with vm_instance_from_template(
         request=request,
         unprivileged_client=unprivileged_client,
         namespace=namespace,
         existing_data_volume=data_volume_scope_function,
-        vm_affinity=vm_affinity,
+        vm_affinity=build_node_affinity(required_nodes=[worker_node1.hostname]),
     ) as vm:
         yield vm
 
