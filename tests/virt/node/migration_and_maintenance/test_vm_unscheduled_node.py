@@ -21,7 +21,6 @@ def unscheduled_node_vm(
     namespace,
     data_volume_scope_function,
 ):
-
     with vm_instance_from_template(
         request=request,
         unprivileged_client=unprivileged_client,
