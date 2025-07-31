@@ -498,7 +498,7 @@ def assert_migration_post_copy_mode(vm):
     assert migration_state.mode == "PostCopy", f"Migration mode is not PostCopy! VMI MigrationState {migration_state}"
 
 
-def build_node_affinity(required_nodes=None, preferred_nodes=None):
+def build_node_affinity_dict(required_nodes=None, preferred_nodes=None):
     affinity = {"nodeAffinity": {}}
 
     if required_nodes:

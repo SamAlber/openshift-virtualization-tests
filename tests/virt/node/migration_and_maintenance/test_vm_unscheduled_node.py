@@ -3,7 +3,7 @@ from ocp_resources.virtual_machine_instance import VirtualMachineInstance
 from pytest_testconfig import config as py_config
 
 from tests.os_params import RHEL_LATEST, RHEL_LATEST_LABELS, RHEL_LATEST_OS
-from tests.virt.utils import build_node_affinity
+from tests.virt.utils import build_node_affinity_dict
 from utilities.constants import TIMEOUT_20SEC
 from utilities.virt import (
     node_mgmt_console,
@@ -26,7 +26,7 @@ def unscheduled_node_vm(
         unprivileged_client=unprivileged_client,
         namespace=namespace,
         existing_data_volume=data_volume_scope_function,
-        vm_affinity=build_node_affinity(required_nodes=[worker_node1.hostname]),
+        vm_affinity=build_node_affinity_dict(required_nodes=[worker_node1.hostname]),
     ) as vm:
         yield vm
 
