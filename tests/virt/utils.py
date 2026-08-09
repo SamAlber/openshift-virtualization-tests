@@ -403,21 +403,25 @@ def get_non_terminated_pods(client, node):
     )
 
 
-def get_pci_fingerprint(vm: VirtualMachineForTests) -> str:
-    """Get PCI fingerprint (md5 hash of sorted BDF addresses) from guest VM.
+def get_pci_addresses(vm: VirtualMachineForTests) -> list[str]:
+    """Get sorted PCI device lines visible to the guest.
+
+    Each line pairs a BDF address with its device description, enabling
+    detection of both address shifts and device swaps on failure.
 
     Args:
         vm: Running VM with SSH access.
 
     Returns:
-        MD5 hash string of the sorted PCI BDF addresses.
+        Sorted list of lspci lines (e.g. ["00:01.0 Display controller: ..."]).
     """
-    fingerprint = run_ssh_commands(
+    output = run_ssh_commands(
         host=vm.ssh_exec,
-        commands=["bash", "-o", "pipefail", "-c", "lspci | awk '{print $1}' | sort | md5sum | awk '{print $1}'"],
+        commands=["lspci"],
     )[0].strip()
-    LOGGER.info(f"PCI fingerprint for VM {vm.name}: {fingerprint}")
-    return fingerprint
+    addresses = output.splitlines()
+    LOGGER.info(f"PCI addresses for VM {vm.name}: {addresses}")
+    return addresses
 
 
 def get_boot_time_for_multiple_vms(vm_list):
