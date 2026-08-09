@@ -15,7 +15,7 @@ from ocp_resources.virtual_machine_restore import VirtualMachineRestore
 from ocp_resources.virtual_machine_snapshot import VirtualMachineSnapshot
 
 from tests.os_params import RHEL_LATEST, RHEL_LATEST_LABELS
-from tests.virt.utils import get_pci_fingerprint
+from tests.virt.utils import get_pci_addresses
 from utilities.virt import (
     VirtualMachineForTestsFromTemplate,
     migrate_vm_and_verify,
@@ -52,24 +52,24 @@ def pci_topology_vm(
 
 
 @pytest.fixture()
-def initial_pci_fingerprint(pci_topology_vm):
-    return get_pci_fingerprint(vm=pci_topology_vm)
+def initial_pci_addresses(pci_topology_vm):
+    return get_pci_addresses(vm=pci_topology_vm)
 
 
 @pytest.fixture()
-def restarted_pci_topology_vm(pci_topology_vm, initial_pci_fingerprint):
+def restarted_pci_topology_vm(pci_topology_vm, initial_pci_addresses):
     restart_vm_wait_for_running_vm(vm=pci_topology_vm)
     return pci_topology_vm
 
 
 @pytest.fixture()
-def migrated_pci_topology_vm(admin_client, pci_topology_vm, initial_pci_fingerprint):
+def migrated_pci_topology_vm(admin_client, pci_topology_vm, initial_pci_addresses):
     migrate_vm_and_verify(vm=pci_topology_vm, client=admin_client, check_ssh_connectivity=True)
     return pci_topology_vm
 
 
 @pytest.fixture()
-def snapshot_restored_pci_topology_vm(admin_client, pci_topology_vm, initial_pci_fingerprint):
+def snapshot_restored_pci_topology_vm(admin_client, pci_topology_vm, initial_pci_addresses):
     with VirtualMachineSnapshot(
         name=f"{pci_topology_vm.name}-snapshot",
         namespace=pci_topology_vm.namespace,
@@ -108,52 +108,52 @@ class TestPCITopologyStability:
     Preconditions:
         - RHEL VM created from latest template with a modern CPU model for migration,
           started and running with SSH access
-        - PCI fingerprint (MD5 of sorted guest PCI BDF addresses) captured before each operation
+        - Sorted PCI BDF address list captured before each operation
     """
 
     @pytest.mark.polarion("CNV-16326")
     def test_pci_address_stability_on_restart(
         self,
-        initial_pci_fingerprint: str,
+        initial_pci_addresses: list[str],
         restarted_pci_topology_vm: VirtualMachineForTests,
     ):
         """
         Steps:
             1. Restart the VM and wait until it is running with SSH access
-            2. Capture PCI fingerprint from the guest
+            2. Capture PCI addresses from the guest
 
         Expected:
-            - Fingerprints match (PCI topology unchanged)
+            - Address lists match (PCI topology unchanged)
         """
-        fingerprint_after = get_pci_fingerprint(vm=restarted_pci_topology_vm)
-        assert fingerprint_after == initial_pci_fingerprint, (
-            f"PCI topology changed after restart: before={initial_pci_fingerprint}, after={fingerprint_after}"
+        addresses_after = get_pci_addresses(vm=restarted_pci_topology_vm)
+        assert addresses_after == initial_pci_addresses, (
+            f"PCI topology changed after restart:\n  before: {initial_pci_addresses}\n  after:  {addresses_after}"
         )
 
     @pytest.mark.polarion("CNV-16327")
     def test_pci_address_stability_on_migration(
         self,
-        initial_pci_fingerprint: str,
+        initial_pci_addresses: list[str],
         migrated_pci_topology_vm: VirtualMachineForTests,
     ):
         """
         Steps:
             1. Live-migrate the VM and verify SSH connectivity
-            2. Capture PCI fingerprint from the guest
+            2. Capture PCI addresses from the guest
 
         Expected:
-            - Fingerprints match (PCI topology unchanged)
+            - Address lists match (PCI topology unchanged)
         """
-        fingerprint_after = get_pci_fingerprint(vm=migrated_pci_topology_vm)
-        assert fingerprint_after == initial_pci_fingerprint, (
-            f"PCI topology changed after migration: before={initial_pci_fingerprint}, after={fingerprint_after}"
+        addresses_after = get_pci_addresses(vm=migrated_pci_topology_vm)
+        assert addresses_after == initial_pci_addresses, (
+            f"PCI topology changed after migration:\n  before: {initial_pci_addresses}\n  after:  {addresses_after}"
         )
 
     @pytest.mark.polarion("CNV-16328")
     @pytest.mark.usefixtures("skip_if_no_storage_class_for_snapshot")
     def test_pci_address_stability_on_snapshot_restore(
         self,
-        initial_pci_fingerprint: str,
+        initial_pci_addresses: list[str],
         snapshot_restored_pci_topology_vm: VirtualMachineForTests,
     ):
         """
@@ -165,12 +165,12 @@ class TestPCITopologyStability:
             2. Stop the VM
             3. Restore the VM from the snapshot
             4. Start the VM and wait until it is running with SSH access
-            5. Capture PCI fingerprint from the guest
+            5. Capture PCI addresses from the guest
 
         Expected:
-            - Fingerprints match (PCI topology unchanged)
+            - Address lists match (PCI topology unchanged)
         """
-        fingerprint_after = get_pci_fingerprint(vm=snapshot_restored_pci_topology_vm)
-        assert fingerprint_after == initial_pci_fingerprint, (
-            f"PCI topology changed after snapshot restore: before={initial_pci_fingerprint}, after={fingerprint_after}"
+        addresses_after = get_pci_addresses(vm=snapshot_restored_pci_topology_vm)
+        assert addresses_after == initial_pci_addresses, (
+            f"PCI topology changed after snapshot restore:\n  before: {initial_pci_addresses}\n  after:  {addresses_after}"
         )
