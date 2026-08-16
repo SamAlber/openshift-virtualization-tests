@@ -18,7 +18,7 @@ from timeout_sampler import TimeoutExpiredError
 from utilities.constants.hco import IMAGE_CRON_STR
 from utilities.constants.monitoring import KUBELET_READY_CONDITION
 from utilities.exceptions import ClusterSanityError, StorageSanityError
-from utilities.hco import wait_for_hco_conditions
+from utilities.hco import is_hco_tainted, wait_for_hco_conditions
 from utilities.infra import LOGGER, wait_for_pods_running
 from utilities.pytest_utils import exit_pytest_execution
 
@@ -314,6 +314,9 @@ def cluster_sanity(
             admin_client=admin_client,
             hco_namespace=hco_namespace,
         )
+
+        if taint_conditions := is_hco_tainted(admin_client=admin_client, hco_namespace=hco_namespace.name):
+            raise ClusterSanityError(err_str=f"HCO has TaintedConfiguration: {taint_conditions}.")
 
     except (ClusterSanityError, NodeUnschedulableError, NodeNotReadyError, StorageSanityError) as ex:
         exit_pytest_execution(
