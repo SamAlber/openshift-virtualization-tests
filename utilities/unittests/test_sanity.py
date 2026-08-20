@@ -876,6 +876,52 @@ class TestClusterSanityTaintCheck:
         assert "TaintedConfiguration" in call_args[1]["log_message"]
         assert "UnsupportedOverride" in call_args[1]["log_message"]
 
+    @patch(
+        "utilities.sanity.is_hco_tainted",
+        return_value=[{"type": "TaintedConfiguration", "status": "True", "reason": "UnsupportedOverride"}],
+    )
+    @patch("utilities.sanity.check_webhook_endpoints_health")
+    @patch("utilities.sanity.check_vm_creation_capability")
+    @patch("utilities.sanity.storage_sanity_check")
+    @patch("utilities.sanity.assert_nodes_in_healthy_condition")
+    @patch("utilities.sanity.assert_nodes_schedulable")
+    @patch("utilities.sanity.wait_for_pods_running")
+    @patch("utilities.sanity.wait_for_hco_conditions")
+    @patch("utilities.sanity.exit_pytest_execution")
+    @patch("utilities.sanity.LOGGER")
+    def test_cluster_sanity_skip_hco_taint_check(
+        self,
+        mock_logger,
+        mock_exit_pytest,
+        _mock_wait_hco,
+        _mock_wait_pods,
+        _mock_assert_schedulable,
+        _mock_assert_healthy,
+        mock_storage_sanity,
+        _mock_check_vm,
+        _mock_check_webhook,
+        mock_taint,
+    ):
+        """Test cluster_sanity skips HCO taint check when --cluster-sanity-skip-hco-taint-check is set"""
+
+        mock_request = MagicMock()
+        mock_request.config.getoption.return_value = ""
+        mock_request.session.config.getoption.side_effect = lambda flag: flag == "--cluster-sanity-skip-hco-taint-check"
+        mock_storage_sanity.return_value = True
+
+        cluster_sanity(
+            request=mock_request,
+            admin_client=MagicMock(),
+            cluster_storage_classes_names=["sc1"],
+            nodes=MagicMock(),
+            hco_namespace=MagicMock(),
+        )
+
+        mock_taint.assert_not_called()
+        mock_exit_pytest.assert_not_called()
+        warning_calls = list(mock_logger.warning.call_args_list)
+        assert any("Skipping HCO taint check" in str(call) for call in warning_calls)
+
 
 class TestDiscoverWebhookServices:
     """Test cases for _discover_webhook_services function"""
