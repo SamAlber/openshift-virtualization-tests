@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from time import sleep
 from typing import TYPE_CHECKING
 
 from pyhelper_utils.shell import run_ssh_commands
@@ -14,6 +15,8 @@ if TYPE_CHECKING:
     from utilities.virt import VirtualMachineForTests
 
 LOGGER = logging.getLogger(__name__)
+
+STRESS_RAMP_UP_SEC = 5
 
 # Allocate and continuously re-dirty memory pages without stress-ng (uses built-in PowerShell/Python).
 WIN_MEM_LOAD_CMD = (
@@ -46,7 +49,9 @@ def start_memory_pressure_on_vm(vm: VirtualMachineForTests) -> None:
     """Continuously dirty memory pages to prevent pre-copy migration convergence.
 
     Kills any leftover stress processes before spawning new ones, since
-    previous processes may be degraded after migration.
+    previous processes may be degraded after migration. Sleeps
+    STRESS_RAMP_UP_SEC after starting so the allocation and dirty loop
+    reach steady-state before migration begins.
 
     This function requires no external tools — uses built-in PowerShell on Windows
     and Python on Linux.
@@ -81,4 +86,5 @@ def start_memory_pressure_on_vm(vm: VirtualMachineForTests) -> None:
             f"nohup python3 -c '{RHEL_MEM_LOAD_CMD}' >/dev/null 2>&1 &",
         ]
     run_ssh_commands(host=vm.ssh_exec, commands=cmd, tcp_timeout=TCP_TIMEOUT_30SEC)
-    LOGGER.info(f"Started 2GB memory pressure on VM {vm.name}")
+    LOGGER.info(f"Started 2GB memory pressure on VM {vm.name}, sleeping {STRESS_RAMP_UP_SEC}s for ramp-up")
+    sleep(STRESS_RAMP_UP_SEC)
